@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Everyday English AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&display=swap"
+        rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Supabase CDN (CRITICAL) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- Animated Background (Global) -->
+    <div class="background-animation" id="bgAnimation">
+        <div class="wave wave1"></div>
+        <div class="wave wave2"></div>
+        <div class="wave wave3"></div>
+        <div class="wave wave4"></div>
+        <div class="wave wave5"></div>
+        <div class="wave wave6"></div>
+    </div>
+
+    <!-- AUTH SCREEN (Visible by default) -->
+    <!-- AUTH SCREEN (Visible by default) -->
+    <div id="auth-screen">
+        <div class="auth-content">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <i class="fa-solid fa-earth-americas" style="font-size: 3rem; color: var(--primary);"></i>
+                <h1 style="margin-top: 1rem;" data-i18n="auth_title">Everyd<span class="highlight-ai">AI</span> English
+                </h1>
+                <p style="color: var(--text-light);" data-i18n="auth_subtitle">Sign in to start learning</p>
+            </div>
+
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-tab="login" onclick="switchAuthTab(this, 'login')"
+                    data-i18n="btn_login">Login</button>
+                <button class="auth-tab" data-tab="register" onclick="switchAuthTab(this, 'register')"
+                    data-i18n="btn_register">Register</button>
+            </div>
+
+            <script>
+                // Standalone UI Handler for Auth Tabs
+                // Ensures immediate visual feedback regardless of app.js state
+                function switchAuthTab(clickedTab, mode) {
+                    // Visual Update
+                    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+                    clickedTab.classList.add('active');
+
+                    // Update Button Text
+                    const submitBtn = document.getElementById('authSubmitBtn');
+                    if (submitBtn) {
+                        // Use LanguageService if available, else fallback
+                        const key = mode === 'login' ? 'btn_login' : 'btn_register';
+                        if (window.LanguageService) {
+                            submitBtn.textContent = window.LanguageService.getText(key);
+                        } else {
+                            submitBtn.textContent = mode === 'login' ? 'Login' : 'Register';
+                        }
+                        submitBtn.setAttribute('data-i18n', key);
+                    }
+
+                    // Clear Messages
+                    const errorMsg = document.getElementById('authError');
+                    const successMsg = document.getElementById('authMessage');
+                    if (errorMsg) errorMsg.textContent = '';
+                    if (successMsg) successMsg.textContent = '';
+
+                    // Dispatch custom event for app.js to catch if needed
+                    document.dispatchEvent(new CustomEvent('auth-mode-change', { detail: { mode } }));
+                }
+            </script>
+
+            <form id="authForm">
+                <div class="input-group">
+                    <i class="fa-solid fa-envelope"></i>
+                    <input type="email" id="authEmail" placeholder="Email" required data-i18n="auth_email_placeholder">
+                </div>
+                <div class="input-group">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" id="authPassword" placeholder="Password" required minlength="6"
+                        data-i18n="auth_password_placeholder">
+                </div>
+                <div id="auth-error-message" class="error-text"></div>
+                <button type="submit" class="btn-primary" id="authSubmitBtn" style="width: 100%;"
+                    data-i18n="btn_login">Login</button>
+                <p id="authError" class="error-msg"></p>
+                <p id="authMessage" class="success-msg"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- APP SCREEN (Hidden by default) -->
+    <div id="app-screen" style="display: none; width: 100%; height: 100%;">
+
+        <!-- API Key Modal (Inside App Screen) -->
+        <div id="apiKeyModal" class="modal">
+            <div class="modal-content">
+                <h2 data-i18n="api_modal_title">Welcome to EverydAI English</h2>
+                <p style="margin-bottom: 1rem;" data-i18n="api_free_desc">Choose your access method to continue.</p>
+
+                <!-- Tabs -->
+                <div class="auth-tabs" style="margin-bottom: 1.5rem;">
+                    <button class="auth-tab active" onclick="switchApiTab(this, 'free')"
+                        data-i18n="api_tab_free">GRATIS</button>
+                    <button class="auth-tab" onclick="switchApiTab(this, 'premium')"
+                        data-i18n="api_tab_premium">PREMIUM</button>
+                </div>
+
+                <!-- Free Tab Content -->
+                <div id="apiFreeContent">
+                    <p class="small-text" data-i18n="api_free_desc">Enter your Google Gemini API Key. Stored locally.
+                    </p>
+                    <p class="small-text"><a href="https://aistudio.google.com/app/apikey" target="_blank"
+                            style="color: var(--primary);" data-i18n="api_get_key">Get a free key here</a></p>
+                    <input type="password" id="apiKeyInput" placeholder="AIzaSy...">
+                    <p class="security-note"
+                        style="font-size: 0.8rem; color: #6B7280; margin-top: 0.5rem; display: flex; align-items: center; gap: 5px;">
+                        <i class="fa-solid fa-lock" style="font-size: 0.7rem;"></i>
+                        <span data-i18n="api_security_note">Tu API Key se almacena localmente en tu navegador. Nunca se
+                            envía a nuestros servidores.</span>
+                    </p>
+                    <button id="saveApiKeyBtn" class="btn-primary" style="margin-top: 1rem;"
+                        data-i18n="btn_start_learning">Start Learning</button>
+                    <button id="trialModeBtn" class="btn-secondary"
+                        style="margin-top: 0.5rem; width: 100%; background: transparent; color: #6B7280; border: 1px solid #E5E7EB;"
+                        data-i18n="btn_offline_mode">Lo
+                        haré más tarde (modo offline)</button>
+                </div>
+
+                <!-- Premium Tab Content -->
+                <div id="apiPremiumContent" class="hidden">
+                    <p class="small-text">Use our premium backend service. No API key required.</p>
+                    <div style="text-align: center; padding: 1rem;">
+                        <i class="fa-solid fa-crown" style="font-size: 3rem; color: #FBBF24; margin-bottom: 1rem;"></i>
+                        <p>Enjoy seamless access without managing keys.</p>
+                    </div>
+                    <button id="usePremiumBtn" class="btn-primary" data-i18n="btn_start_learning">Start Premium</button>
+                </div>
+
+                <p id="apiKeyError" class="error-msg"></p>
+            </div>
+        </div>
+
+        <div class="app-container">
+            <!-- Sidebar Navigation -->
+            <nav class="sidebar">
+                <div class="logo">
+                    <i class="fa-solid fa-earth-americas logo-icon"></i>
+                    <h1>Everyd<span class="highlight-ai">AI</span> English</h1>
+                </div>
+                <ul class="nav-links">
+                    <li class="active" data-target="home">
+                        <span class="icon"><i class="fa-solid fa-house"></i></span>
+                        <span data-i18n="nav_home">Home</span>
+                    </li>
+                    <li data-target="generator">
+                        <span class="icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+                        <span data-i18n="nav_generator">Generator</span>
+                    </li>
+                    <li data-target="challenge">
+                        <span class="icon"><i class="fa-solid fa-pen-nib"></i></span>
+                        <span data-i18n="nav_challenge">Challenge Mode</span>
+                    </li>
+                    <li data-target="dictionary">
+                        <span class="icon"><i class="fa-solid fa-book-bookmark"></i></span>
+                        <span data-i18n="nav_dictionary">Dictionary</span>
+                    </li>
+                    <li data-target="profile">
+                        <span class="icon"><i class="fa-solid fa-user"></i></span>
+                        <span data-i18n="nav_profile">Profile</span>
+                    </li>
+                    <li data-target="settings">
+                        <span class="icon"><i class="fa-solid fa-gear"></i></span>
+                        <span data-i18n="nav_settings">Settings</span>
+                    </li>
+                </ul>
+                <!-- Auth Controls removed from here and moved to Profile page -->
+            </nav>
+
+            <!-- Main Content Area -->
+            <main class="content">
+
+                <div class="top-bar" style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
+                    <div id="planIndicator"
+                        style="margin-left: 15px; padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 5px;">
+                        <!-- Injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Home Section -->
+                <section id="home" class="active-section">
+                    <div class="hero-card" style="position: relative; overflow: hidden; padding: 3rem;">
+                        <h2 data-i18n="home_welcome" style="margin-bottom: 1rem;">Welcome back!</h2>
+                        <p data-i18n="home_subtitle" style="margin-bottom: 2rem;">Ready to improve your English today?
+                        </p>
+                        <div class="quick-actions">
+                            <button class="btn-action" onclick="navigateTo('generator')"
+                                data-i18n="btn_generate">Generate
+                                New Topic</button>
+                        </div>
+                        <!-- Planet Icon -->
+                        <i class="fa-solid fa-earth-europe absolute -bottom-4 -right-4 text-9xl text-white opacity-20 transform rotate-12"
+                            style="position: absolute; bottom: -1rem; right: -1rem; font-size: 8rem; color: rgba(255,255,255,0.2); transform: rotate(12deg);"></i>
+                    </div>
+                </section>
+
+                <!-- Generator Section -->
+                <section id="generator">
+                    <div class="card">
+                        <h2 data-i18n="gen_title">Topic Generator</h2>
+                        <!-- Difficulty Section (Now First) -->
+                        <div class="input-group">
+                            <label data-i18n="gen_difficulty_label"
+                                style="margin-bottom: 0.8rem; display: block;">Difficulty Level</label>
+                            <div class="star-rating-container">
+                                <div id="starRating" class="star-rating">
+                                    <i class="fa-solid fa-star" data-value="1"></i>
+                                    <i class="fa-solid fa-star" data-value="2"></i>
+                                    <i class="fa-solid fa-star" data-value="3"></i>
+                                    <i class="fa-regular fa-star" data-value="4"></i>
+                                    <i class="fa-regular fa-star" data-value="5"></i>
+                                </div>
+                                <span id="difficultyLabel" class="difficulty-text">Intermediate</span>
+                            </div>
+                            <input type="hidden" id="genRarity" value="3">
+                        </div>
+
+                        <!-- Topic Section (Now Second & Collapsible) -->
+                        <div class="input-group topic-group">
+                            <button id="toggleTopicBtn" class="topic-toggle-btn">
+                                <span data-i18n="gen_topic_label">Specify a custom topic (Optional)</span>
+                                <i class="fa-solid fa-chevron-down" id="topicChevron"></i>
+                            </button>
+                            <div id="topicInputContainer" class="topic-content hidden">
+                                <input type="text" id="genTopic" placeholder="e.g., Ordering coffee, Job interview"
+                                    class="topic-input" data-i18n="gen_topic_placeholder">
+                            </div>
+                        </div>
+                        <button id="generateBtn" class="btn-primary" data-i18n="btn_generate_action">Generate</button>
+                    </div>
+
+                    <div id="genLoading" class="hidden loading">
+                        <i class="fa-solid fa-spinner fa-spin"></i>
+                        <p data-i18n="gen_loading">Generating content...</p>
+                    </div>
+
+                    <div id="genResult" class="hidden fade-in">
+                        <!-- Phone Mockup Container -->
+                        <div class="phone-mockup">
+                            <div class="phone-notch"></div>
+
+                            <!-- Status Bar (Moved out of screen as requested) -->
+                            <div class="phone-status-bar">
+                                <span>9:41</span>
+                                <div class="phone-status-icons">
+                                    <i class="fa-solid fa-signal"></i>
+                                    <i class="fa-solid fa-wifi"></i>
+                                    <i class="fa-solid fa-battery-full"></i>
+                                </div>
+                            </div>
+
+                            <div class="phone-screen">
+
+                                <!-- App Header Removed as requested -->
+
+                                <!-- Chat Area -->
+                                <div id="genEnglish" class="chat-container">
+                                    <!-- Messages will be injected here -->
+                                </div>
+
+                                <!-- Input Area Removed as requested -->
+                                <div class="phone-home-bar"></div>
+                            </div>
+                        </div>
+
+                        <!-- Context and Glossary (Outside Phone) -->
+                        <div class="context-glossary-container">
+                            <div class="card context-card">
+                                <h3 data-i18n="result_context">Spanish Context</h3>
+                                <p id="genSpanish" class="context-text"></p>
+                            </div>
+
+                            <div class="card glossary-card">
+                                <h3 data-i18n="result_glossary">Glossary</h3>
+                                <ul id="genGlossary" class="glossary-list"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Challenge Section -->
+                <section id="challenge">
+                    <div class="card">
+                        <h2 data-i18n="challenge_title">Challenge Mode</h2>
+                        <p data-i18n="challenge_desc">Write a sentence or paragraph in English (or Spanish) and get
+                            corrections.</p>
+                        <textarea id="challengeInput" rows="4" placeholder="Write here..."></textarea>
+                        <button id="challengeBtn" class="btn-primary" data-i18n="challenge_btn">Check Text</button>
+                    </div>
+
+                    <div id="challengeLoading" class="hidden loading">
+                        <i class="fa-solid fa-spinner fa-spin"></i>
+                        <p data-i18n="challenge_loading">Analyzing text...</p>
+                    </div>
+
+                    <div id="challengeResult" class="hidden fade-in card">
+                        <div id="challengeFeedback"></div>
+                    </div>
+                </section>
+
+                <!-- Dictionary Section -->
+                <section id="dictionary">
+                    <div class="card dictionary-card">
+                        <!-- MacBook Air Mockup -->
+                        <div class="macbook-container">
+                            <div class="macbook-lid">
+                                <div class="macbook-camera"></div>
+                                <div class="macbook-screen">
+                                    <div class="macbook-notch"></div>
+                                    <!-- PDF App -->
+                                    <div class="pdf-app">
+                                        <div class="pdf-toolbar">
+                                            <div class="window-controls">
+                                                <span class="dot red"></span>
+                                                <span class="dot yellow"></span>
+                                                <span class="dot green"></span>
+                                            </div>
+                                            <div class="pdf-title">Diccionario</div>
+                                            <div class="pdf-tools">
+                                                <div class="search-bar-mac">
+                                                    <i class="fa-solid fa-magnifying-glass"></i>
+                                                    <input type="text" id="dictSearchInput" placeholder="Search...">
+                                                </div>
+                                                <div class="tool-icon-container">
+                                                    <i class="fa-solid fa-pen-to-square"></i>
+                                                </div>
+                                                <div class="tool-icon-container">
+                                                    <i class="fa-solid fa-share-nodes"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="pdf-content">
+                                            <!-- Dictionary Items as PDF Pages -->
+                                            <div id="dictionaryList" class="pdf-pages-container">
+                                                <!-- Items injected here -->
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="macbook-base">
+                                <div class="macbook-trackpad"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Profile Section -->
+                <section id="profile">
+                    <div class="card profile-card">
+                        <div class="profile-header">
+                            <div class="profile-avatar">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                            <div class="profile-info">
+                                <h2 id="profileName">User Name</h2>
+                                <p id="userEmail" class="profile-email">user@example.com</p>
+                                <span id="profilePlanBadge" class="badge-pro">Free Plan</span>
+                            </div>
+                        </div>
+
+                        <div class="profile-stats">
+                            <div class="stat-item">
+                                <span class="stat-value" id="profileWordCount">0</span>
+                                <span class="stat-label" data-i18n="stat_words">Words</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value" id="profileTopicCount">0</span>
+                                <span class="stat-label" data-i18n="stat_topics">Topics</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">0</span>
+                                <span class="stat-label" data-i18n="stat_streak">Streak</span>
+                            </div>
+                        </div>
+
+                        <div class="profile-actions">
+                            <button class="btn-secondary" style="width: 100%; margin-bottom: 1rem;">
+                                <i class="fa-solid fa-pen-to-square"></i> <span data-i18n="profile_edit">Edit
+                                    Profile</span>
+                            </button>
+                            <button id="signOutBtn" class="btn-danger" style="width: 100%;">
+                                <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="profile_logout">Sign
+                                    Out</span>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Settings Section -->
+                <section id="settings">
+                    <div class="card">
+                        <h2 data-i18n="settings_title">Settings</h2>
+
+                        <h3 data-i18n="settings_language">Interface Language</h3>
+                        <div class="select-wrapper">
+                            <select id="languageSelector" class="settings-select">
+                                <option value="es">Español (ES)</option>
+                                <option value="en">English (US)</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down select-arrow"></i>
+                        </div>
+
+                        <h3 data-i18n="settings_api" style="margin-top: 2rem;">API Key Management</h3>
+                        <p>Your API Key is stored locally.</p>
+                        <button id="resetApiKeyBtn" class="btn-secondary" data-i18n="settings_reset">Reset API
+                            Key</button>
+
+                        <h3 data-i18n="settings_data" style="margin-top: 2rem;">Data Management</h3>
+                        <button id="clearDataBtn" class="btn-danger" data-i18n="settings_clear">Clear All Saved
+                            Data</button>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+    <!-- Services -->
+    <script src="services/auth.js"></script>
+    <script src="services/gemini.js"></script>
+    <script src="services/vocabulary.js"></script>
+    <script src="services/trialData.js"></script>
+    <script src="services/i18n.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
