@@ -212,8 +212,13 @@ body {
     flex: 1;
     padding: 2rem;
     overflow-y: auto;
+}
+
+.content>* {
     max-width: 1000px;
-    margin: 0 auto;
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
 }
 
 section {
