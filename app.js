@@ -138,8 +138,45 @@ document.addEventListener('DOMContentLoaded', () => {
     setupParallax();
     setupTopicToggle();
     setupStarRating(); // Initialize star rating
+    setupStarRating(); // Initialize star rating
     setupAuth(); // Initialize Auth
+    setupPayment(); // Initialize Payment
 });
+
+function setupPayment() {
+    // 1. Button Listener
+    const premiumBtn = document.getElementById('usePremiumBtn');
+    if (premiumBtn) {
+        premiumBtn.addEventListener('click', () => {
+            if (window.PaymentService) {
+                window.PaymentService.startPremiumCheckout();
+            } else {
+                console.error('PaymentService not loaded');
+            }
+        });
+    }
+
+    // 2. Check for Payment Success
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('payment') === 'success') {
+        showToast('¡Gracias por suscribirte! Tu cuenta ahora es Premium.', 'success');
+
+        // Remove query param to clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+
+        // Force refresh session to get updated premium status
+        if (window.AuthService) {
+            window.AuthService.getCurrentUser().then(user => {
+                if (user) {
+                    // UI update will happen automatically via onAuthStateChange or we can force it
+                    // But getCurrentUser already updates localStorage and we might need to trigger UI update
+                    // Let's manually trigger UI update just in case
+                    PremiumManager.updateUI();
+                }
+            });
+        }
+    }
+}
 
 // --- Auth Logic (SPA Flow) ---
 function setupAuth() {
